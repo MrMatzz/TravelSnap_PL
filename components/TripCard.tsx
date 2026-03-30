@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Colors } from '../constants/Colors';
 import RatingStars from './RatingStars';
 
 interface TripCardProps {
@@ -17,20 +18,20 @@ export default function TripCard({ id, title, destination, date, rating, onDelet
     <View style={styles.cardContainer}>
       <View style={styles.cardHeader}>
         <Text style={styles.title}>{title}</Text>
-        <Pressable onPress={() => onDelete(id)}>
-          <Ionicons name="trash-outline" size={24} color="#F44336" />
+        <Pressable onPress={() => onDelete(id)} style={styles.deleteButton}>
+          <Ionicons name="trash-outline" size={20} color={Colors.accent} />
         </Pressable>
       </View>
       
       <RatingStars rating={rating} />
       
       <View style={styles.infoRow}>
-        <Ionicons name="location-outline" size={16} color="#666" />
+        <Ionicons name="location-outline" size={16} color={Colors.primary} />
         <Text style={styles.infoText}>{destination}</Text>
       </View>
       
       <View style={styles.infoRow}>
-        <Ionicons name="calendar-outline" size={16} color="#666" />
+        <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
         <Text style={styles.infoText}>{date}</Text>
       </View>
     </View>
@@ -39,14 +40,19 @@ export default function TripCard({ id, title, destination, date, rating, onDelet
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.card,
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-      android: { elevation: 3 },
-      web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' },
+      ios: { 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 2 }, 
+        shadowOpacity: 0.2, 
+        shadowRadius: 8 
+      },
+      android: { elevation: 4 },
+      web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.2)' },
     }),
   },
   cardHeader: {
@@ -58,8 +64,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: Colors.textPrimary,
     flex: 1,
+    marginRight: 10,
+  },
+  deleteButton: {
+    backgroundColor: Colors.accent + '26',
+    borderRadius: 12,
+    padding: 6,
   },
   infoRow: {
     flexDirection: 'row',
@@ -67,8 +79,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   infoText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: Colors.textSecondary,
     marginLeft: 6,
   },
 });
