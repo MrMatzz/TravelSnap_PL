@@ -4,12 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import AddTripForm from '../components/AddTripForm';
 import { Colors } from '../constants/Colors';
 import { useTrips } from '../context/TripContext';
+import { TripData } from '../types/trip';
 
 export default function AddTripScreen() {
   const router = useRouter();
   const { addTrip } = useTrips();
 
-  const handleAdd = (tripData: { title: string; destination: string; date: string; rating: number }) => {
+  const handleAdd = (tripData: TripData) => {
     addTrip(tripData);
     router.back();
   };

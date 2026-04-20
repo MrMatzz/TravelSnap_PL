@@ -1,16 +1,63 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { saveImageToTrip } from '../utils/imageStorage';
 
 interface AddTripFormProps {
-  onAdd: (trip: { title: string; destination: string; date: string; rating: number }) => void;
+  onAdd: (trip: { id: string; title: string; destination: string; date: string; rating: number; imageUri?: string }) => void;
 }
 
 export default function AddTripForm({ onAdd }: AddTripFormProps) {
+  const [draftId, setDraftId] = useState(() => Date.now().toString());
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
   const [date, setDate] = useState('');
   const [rating, setRating] = useState('');
+  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const savedUri = await saveImageToTrip(result.assets[0].uri, draftId);
+      setImageUri(savedUri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Brak uprawnień', 'Potrzebujemy dostępu do aparatu.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const savedUri = await saveImageToTrip(result.assets[0].uri, draftId);
+      setImageUri(savedUri);
+    }
+  };
+
+  const handleAddPhoto = () => {
+    Alert.alert('Dodaj zdjęcie', 'Wybierz źródło', [
+      { text: 'Galeria', onPress: pickImage },
+      { text: 'Kamera', onPress: takePhoto },
+      { text: 'Anuluj', style: 'cancel' },
+    ]);
+  };
 
   const handlePress = () => {
     if (!title.trim() || !destination.trim() || !date.trim() || !rating.trim()) {
@@ -31,21 +78,40 @@ export default function AddTripForm({ onAdd }: AddTripFormProps) {
     }
 
     onAdd({
+      id: draftId,
       title: title.trim(),
       destination: destination.trim(),
       date: date.trim(),
       rating: parsedRating,
+      imageUri: imageUri,
     });
 
+    setDraftId(Date.now().toString());
     setTitle('');
     setDestination('');
     setDate('');
     setRating('');
+    setImageUri(undefined);
   };
 
   return (
     <View style={styles.formContainer}>
       <Text style={styles.sectionTitle}>Dodaj nową podróż</Text>
+      
+      {imageUri ? (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: imageUri }} style={styles.previewImage} />
+          <Pressable onPress={handleAddPhoto} style={styles.changeImageButton}>
+            <Text style={styles.changeImageText}>Zmień zdjęcie</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable onPress={handleAddPhoto} style={styles.photoPlaceholder}>
+          <Ionicons name="camera-outline" size={32} color={Colors.textSecondary} />
+          <Text style={styles.photoText}>Dodaj zdjęcie</Text>
+        </Pressable>
+      )}
+
       <TextInput 
         style={styles.input} 
         placeholder="Tytuł" 
@@ -105,6 +171,42 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 12,
   },
+  photoPlaceholder: {
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  photoText: {
+    color: Colors.textSecondary,
+    marginTop: 8,
+    fontSize: 16,
+  },
+  imageContainer: {
+    marginBottom: 16,
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+  },
+  changeImageButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  changeImageText: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   input: {
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
@@ -116,14 +218,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   addButton: {
-    backgroundColor: Colors.accent, // Изменено с primary на accent
+    backgroundColor: Colors.accent,
     paddingVertical: 14,
-    borderRadius: 12, // Изменено с 8 на 12
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 4,
   },
   buttonText: {
-    color: Colors.textPrimary, // Белый текст
+    color: Colors.textPrimary,
     fontSize: 16,
     fontWeight: 'bold',
   },
