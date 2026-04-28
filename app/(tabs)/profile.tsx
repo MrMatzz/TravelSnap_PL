@@ -2,8 +2,17 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { useTrips } from '../../context/TripContext';
 
 export default function ProfileScreen() {
+  const { trips } = useTrips();
+
+  const count = trips.length;
+  const avgRating = count > 0 
+    ? (trips.reduce((sum, trip) => sum + trip.rating, 0) / count).toFixed(1) 
+    : '0.0';
+  const uniqueCountries = new Set(trips.map(t => t.destination)).size;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -16,15 +25,15 @@ export default function ProfileScreen() {
 
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>12</Text>
+          <Text style={styles.statValue}>{count}</Text>
           <Text style={styles.statLabel}>Trips</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>5</Text>
+          <Text style={styles.statValue}>{uniqueCountries}</Text>
           <Text style={styles.statLabel}>Countries</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>4.8</Text>
+          <Text style={styles.statValue}>{avgRating}</Text>
           <Text style={styles.statLabel}>Rating</Text>
         </View>
       </View>

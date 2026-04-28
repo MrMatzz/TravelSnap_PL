@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import RatingStars from '../../components/RatingStars';
 import { Colors } from '../../constants/Colors';
 import { useTrips } from '../../context/TripContext';
@@ -10,7 +10,7 @@ import { useTrips } from '../../context/TripContext';
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { trips } = useTrips();
+  const { trips, deleteTrip } = useTrips();
   
   const trip = trips.find(t => t.id === id);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -39,6 +39,22 @@ export default function TripDetailScreen() {
     }
   };
 
+  const handleDelete = async () => {
+    await deleteTrip(id);
+    router.back();
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Usun podroze",
+      "Tej operacji nie mozna cofnac. Czy na pewno?",
+      [
+        { text: "Anuluj", style: "cancel" },
+        { text: "Usun", style: "destructive", onPress: handleDelete }
+      ]
+    );
+  };
+
   if (!trip) return <View style={styles.container} />;
 
   const galleryCount = trip.galleryUris?.length || 0;
@@ -49,13 +65,20 @@ export default function TripDetailScreen() {
         options={{ 
           title: trip.title,
           headerRight: () => (
-            <Pressable onPress={toggleFavorite}>
-              <Ionicons 
-                name={isFavorite ? "heart" : "heart-outline"} 
-                size={24} 
-                color={isFavorite ? Colors.accent : Colors.textSecondary} 
-              />
-            </Pressable>
+            <View style={styles.headerRightContainer}>
+              <Link href={`/trip/edit/${trip.id}` as any} asChild>
+                <Pressable>
+                  <Ionicons name="create-outline" size={24} color={Colors.textPrimary} />
+                </Pressable>
+              </Link>
+              <Pressable onPress={toggleFavorite}>
+                <Ionicons 
+                  name={isFavorite ? "heart" : "heart-outline"} 
+                  size={24} 
+                  color={isFavorite ? Colors.accent : Colors.textSecondary} 
+                />
+              </Pressable>
+            </View>
           )
         }} 
       />
@@ -96,6 +119,11 @@ export default function TripDetailScreen() {
         <Pressable style={styles.button} onPress={() => router.back()}>
           <Text style={styles.buttonText}>Powrót do listy</Text>
         </Pressable>
+
+        <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+          <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.deleteButtonText}>Usuń podróż</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -105,6 +133,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
   heroImage: {
     width: '100%',
@@ -171,6 +204,21 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: Colors.background,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: '#E94560',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
