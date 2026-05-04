@@ -1,14 +1,34 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
+import DestinationCard from '../../components/DestinationCard';
 import { Colors } from '../../constants/Colors';
 
+const POPULAR = [
+  "Tokyo", "Lisbon", "Reykjavik", "Bali", 
+  "Cape Town", "Kyoto", "Marrakech", "Patagonia"
+];
+
 export default function ExploreScreen() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [listKey, setListKey] = useState(0);
+
+  const refetchAll = useCallback(() => {
+    setIsRefreshing(true);
+    setListKey(prev => prev + 1);
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Ionicons name="compass" size={64} color={Colors.primary} />
-      <Text style={styles.title}>Discover new places</Text>
-      <Text style={styles.subtitle}>Coming soon...</Text>
+      <FlatList
+        key={`list-${listKey}`}
+        data={POPULAR}
+        keyExtractor={(city) => city}
+        renderItem={({ item }) => <DestinationCard city={item} />}
+        contentContainerStyle={styles.listContent}
+        refreshing={isRefreshing}
+        onRefresh={refetchAll}
+      />
     </View>
   );
 }
@@ -17,18 +37,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.textPrimary,
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginTop: 8,
+  listContent: {
+    padding: 16,
+    gap: 16,
   },
 });
