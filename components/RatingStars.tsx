@@ -1,33 +1,35 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 interface RatingStarsProps {
   rating: number;
-  maxStars?: number;
+  onChange?: (value: number) => void; 
 }
 
-export default function RatingStars({ rating, maxStars = 5 }: RatingStarsProps) {
-  const stars = [];
-  
-  for (let i = 1; i <= maxStars; i++) {
-    const iconName = i <= rating ? 'star' : 'star-outline';
-    stars.push(
-      <Ionicons key={i} name={iconName} size={16} color={Colors.accent} style={styles.star} />
-    );
-  }
-
-  return <View style={styles.row}>{stars}</View>;
+export default function RatingStars({ rating, onChange }: RatingStarsProps) {
+  return (
+    <View style={styles.container}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Pressable 
+          key={star} 
+          onPress={() => onChange && onChange(star)} 
+          disabled={!onChange}
+        >
+          <Ionicons 
+            name={star <= rating ? "star" : "star-outline"} 
+            size={32} 
+            color="#FFD700" 
+          />
+        </Pressable>
+      ))}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  container: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  star: {
-    marginRight: 2,
+    gap: 8,
   },
 });

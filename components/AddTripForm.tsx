@@ -1,232 +1,280 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../constants/Colors';
-import { saveImageToTrip } from '../utils/imageStorage';
+import { useTrips } from '../context/TripContext';
+import { TripFormData, tripSchema } from '../types/tripSchema';
+import RatingStars from './RatingStars';
 
-interface AddTripFormProps {
-  onAdd: (trip: { id: string; title: string; destination: string; date: string; rating: number; imageUri?: string }) => void;
-}
+export default function AddTripForm() {
+  const { trips, addTrip } = useTrips();
+  const router = useRouter();
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-export default function AddTripForm({ onAdd }: AddTripFormProps) {
-  const [draftId, setDraftId] = useState(() => Date.now().toString());
-  const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
-  const [date, setDate] = useState('');
-  const [rating, setRating] = useState('');
-  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
+  const destinationRef = useRef<TextInput>(null);
+  const dateRef = useRef<TextInput>(null);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
+  const existingTitles = useMemo(
+    () => trips.map((t) => t.title.toLowerCase()),
+    [trips]
+  );
 
-    if (!result.canceled) {
-      const savedUri = await saveImageToTrip(result.assets[0].uri, draftId);
-      setImageUri(savedUri);
+  const schema = useMemo(
+    () =>
+      tripSchema.extend({
+        title: tripSchema.shape.title.refine(
+          async (val) => {
+            await new Promise((r) => setTimeout(r, 150));
+            return !existingTitles.includes(val.toLowerCase());
+          },
+          { message: 'Tytuł już istnieje – wybierz inny' }
+        ),
+      }),
+    [existingTitles]
+  );
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    trigger,
+    formState: { isSubmitting, isValidating },
+  } = useForm<TripFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: '',
+      destination: '',
+      date: '',
+      rating: 3,
+    },
+    mode: 'onBlur',
+  });
+
+  const goNext = async () => {
+    const fields = step === 1 ? (['title', 'destination'] as const) : (['date', 'rating'] as const);
+    const ok = await trigger(fields);
+    if (ok) {
+      setStep((s) => (s + 1) as 1 | 2 | 3);
     }
   };
 
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+  const goBack = () => {
+    setStep((s) => (s - 1) as 1 | 2 | 3);
+  };
+
+  const pickImage = async (onChange: (val: string) => void) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Brak uprawnień', 'Potrzebujemy dostępu do aparatu.');
+      Alert.alert('Brak uprawnień', 'Musisz zezwolić na dostęp do galerii, aby dodać zdjęcie.');
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [16, 9],
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
     });
 
-    if (!result.canceled) {
-      const savedUri = await saveImageToTrip(result.assets[0].uri, draftId);
-      setImageUri(savedUri);
+    if (!result.canceled && result.assets[0]) {
+      onChange(result.assets[0].uri);
     }
   };
 
-  const handleAddPhoto = () => {
-    Alert.alert('Dodaj zdjęcie', 'Wybierz źródło', [
-      { text: 'Galeria', onPress: pickImage },
-      { text: 'Kamera', onPress: takePhoto },
-      { text: 'Anuluj', style: 'cancel' },
-    ]);
-  };
-
-  const handlePress = () => {
-    if (!title.trim() || !destination.trim() || !date.trim() || !rating.trim()) {
-      Alert.alert('Błąd walidacji', 'Wszystkie pola muszą być wypełnione.');
-      return;
-    }
-
-    const parsedRating = Number(rating);
-    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
-      Alert.alert('Błąd walidacji', 'Ocena musi być liczbą z przedziału 1-5.');
-      return;
-    }
-
-    const dateRegex = /^\d{4}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-      Alert.alert('Błąd walidacji', 'Data musi być w formacie YYYY-MM.');
-      return;
-    }
-
-    onAdd({
-      id: draftId,
-      title: title.trim(),
-      destination: destination.trim(),
-      date: date.trim(),
-      rating: parsedRating,
-      imageUri: imageUri,
-    });
-
-    setDraftId(Date.now().toString());
-    setTitle('');
-    setDestination('');
-    setDate('');
-    setRating('');
-    setImageUri(undefined);
+  const onSubmit = async (data: TripFormData) => {
+    await addTrip(data);
+    reset();
+    router.back();
   };
 
   return (
-    <View style={styles.formContainer}>
-      <Text style={styles.sectionTitle}>Dodaj nową podróż</Text>
-      
-      {imageUri ? (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.previewImage} />
-          <Pressable onPress={handleAddPhoto} style={styles.changeImageButton}>
-            <Text style={styles.changeImageText}>Zmień zdjęcie</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <Pressable onPress={handleAddPhoto} style={styles.photoPlaceholder}>
-          <Ionicons name="camera-outline" size={32} color={Colors.textSecondary} />
-          <Text style={styles.photoText}>Dodaj zdjęcie</Text>
-        </Pressable>
-      )}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.keyboardWrapper}
+    >
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
+        <View style={styles.formContainer}>
+          <View style={styles.progressContainer}>
+            {[1, 2, 3].map((s) => (
+              <View key={s} style={[styles.dot, step === s && styles.dotActive]} />
+            ))}
+          </View>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Tytuł" 
-        placeholderTextColor={Colors.textSecondary}
-        value={title} 
-        onChangeText={setTitle} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Cel podróży" 
-        placeholderTextColor={Colors.textSecondary}
-        value={destination} 
-        onChangeText={setDestination} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Data (YYYY-MM)" 
-        placeholderTextColor={Colors.textSecondary}
-        value={date} 
-        onChangeText={setDate} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Ocena (1-5)" 
-        placeholderTextColor={Colors.textSecondary}
-        value={rating} 
-        onChangeText={setRating} 
-        keyboardType="numeric" 
-      />
-      
-      <Pressable 
-        style={({ pressed }) => [styles.addButton, { opacity: pressed ? 0.8 : 1 }]} 
-        onPress={handlePress}
-      >
-        <Text style={styles.buttonText}>Dodaj</Text>
-      </Pressable>
-    </View>
+          {step === 1 && (
+            <>
+              <Controller
+                control={control}
+                name="title"
+                render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                  <View style={styles.field}>
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Tytuł</Text>
+                      {isValidating && <ActivityIndicator size="small" color={Colors.reactBlue} />}
+                    </View>
+                    <TextInput
+                      style={[styles.input, fieldState.error && styles.inputError]}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="np. Wycieczka do Paryża"
+                      placeholderTextColor="#9CA3AF"
+                      autoFocus={true}
+                      returnKeyType="next"
+                      onSubmitEditing={() => destinationRef.current?.focus()}
+                    />
+                    {fieldState.error && <Text style={styles.errorText}>{fieldState.error.message}</Text>}
+                  </View>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="destination"
+                render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Cel podróży</Text>
+                    <TextInput
+                      ref={destinationRef}
+                      style={[styles.input, fieldState.error && styles.inputError]}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="np. Paryż, Francja"
+                      placeholderTextColor="#9CA3AF"
+                      returnKeyType="done"
+                      onSubmitEditing={goNext}
+                    />
+                    {fieldState.error && <Text style={styles.errorText}>{fieldState.error.message}</Text>}
+                  </View>
+                )}
+              />
+
+              <Pressable onPress={goNext} style={styles.submitBtn}>
+                <Text style={styles.submitBtnText}>Dalej</Text>
+              </Pressable>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <Controller
+                control={control}
+                name="date"
+                render={({ field: { onChange, onBlur, value }, fieldState }) => (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Data</Text>
+                    <TextInput
+                      ref={dateRef}
+                      style={[styles.input, fieldState.error && styles.inputError]}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                      returnKeyType="done"
+                      onSubmitEditing={goNext}
+                    />
+                    {fieldState.error && <Text style={styles.errorText}>{fieldState.error.message}</Text>}
+                  </View>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="rating"
+                render={({ field: { onChange, value }, fieldState }) => (
+                <View style={styles.field}>
+                  <Text style={styles.label}>Ocena</Text>
+                  <RatingStars
+                    rating={Number(value)} 
+                    onChange={(val: number) => onChange(val)} 
+                  />
+                  {fieldState.error && <Text style={styles.errorText}>{fieldState.error.message}</Text>}
+                </View>
+               )}
+              />
+
+              <View style={styles.actionsRow}>
+                <Pressable onPress={goBack} style={styles.secondaryBtn}>
+                  <Text style={styles.secondaryBtnText}>Wstecz</Text>
+                </Pressable>
+                <Pressable onPress={goNext} style={[styles.submitBtn, { flex: 1, marginTop: 0 }]}>
+                  <Text style={styles.submitBtnText}>Dalej</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <Controller
+                control={control}
+                name="imageUri"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Zdjęcie okładkowe (opcjonalnie)</Text>
+                    {value ? (
+                      <Image source={{ uri: value }} style={styles.preview} />
+                    ) : (
+                      <View style={styles.previewPlaceholder}>
+                        <Text style={{ color: '#6B7280' }}>Brak zdjęcia</Text>
+                      </View>
+                    )}
+                    <Pressable onPress={() => pickImage(onChange)} style={styles.pickBtn}>
+                      <Text style={styles.pickBtnText}>
+                        {value ? 'Zmień zdjęcie' : 'Wybierz zdjęcie'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              />
+
+              <View style={styles.actionsRow}>
+                <Pressable onPress={goBack} style={styles.secondaryBtn}>
+                  <Text style={styles.secondaryBtnText}>Wstecz</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
+                  style={[styles.submitBtn, { flex: 1, marginTop: 0 }, isSubmitting && styles.submitBtnDisabled]}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color={Colors.darkBg} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Dodaj podróż</Text>
+                  )}
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  formContainer: {
-    backgroundColor: Colors.card,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 10,
-    marginBottom: 24,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
-      android: { elevation: 3 },
-      web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.3)' },
-    }),
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-  },
-  photoPlaceholder: {
-    borderWidth: 2,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  photoText: {
-    color: Colors.textSecondary,
-    marginTop: 8,
-    fontSize: 16,
-  },
-  imageContainer: {
-    marginBottom: 16,
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-  changeImageButton: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  changeImageText: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  input: {
-    backgroundColor: Colors.inputBg,
-    borderWidth: 1,
-    borderColor: Colors.inputBorder,
-    color: Colors.textPrimary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 16,
-  },
-  addButton: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonText: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  keyboardWrapper: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  formContainer: { backgroundColor: Colors.card, padding: 16, borderRadius: 12 },
+  progressContainer: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 24, marginTop: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#4B5563' },
+  dotActive: { backgroundColor: Colors.reactBlue },
+  field: { marginBottom: 16 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  label: { fontSize: 14, color: Colors.textSecondary, fontWeight: '500' },
+  input: { borderWidth: 1, borderColor: '#4B5563', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.inputBg },
+  inputError: { borderColor: Colors.accent, borderWidth: 1.5 },
+  errorText: { fontSize: 12, color: Colors.accent, marginTop: 4 },
+  submitBtn: { backgroundColor: Colors.reactBlue, paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 12 },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText: { color: Colors.darkBg, fontSize: 16, fontWeight: '700' },
+  actionsRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  secondaryBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#4B5563', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { color: Colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  preview: { width: '100%', height: 200, borderRadius: 8, marginTop: 8 },
+  previewPlaceholder: { width: '100%', height: 200, borderRadius: 8, backgroundColor: Colors.inputBg, justifyContent: 'center', alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: '#4B5563', borderStyle: 'dashed' },
+  pickBtn: { backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.reactBlue, paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 12 },
+  pickBtnText: { color: Colors.reactBlue, fontWeight: '600', fontSize: 16 },
 });

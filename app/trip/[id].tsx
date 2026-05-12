@@ -36,7 +36,6 @@ export default function TripDetailScreen() {
           setIsFavorite(JSON.parse(status));
         }
       } catch (e) {
-        console.error(e);
       }
     };
     loadFavoriteStatus();
@@ -48,7 +47,6 @@ export default function TripDetailScreen() {
       setIsFavorite(newStatus);
       await AsyncStorage.setItem(`@favorite_${id}`, JSON.stringify(newStatus));
     } catch (e) {
-      console.error(e);
     }
   };
 
@@ -68,7 +66,7 @@ export default function TripDetailScreen() {
     );
   };
 
-    if (!trip) {
+  if (!trip) {
     return (
       <ErrorView 
         message="Nie znaleziono podróży" 
@@ -77,8 +75,8 @@ export default function TripDetailScreen() {
       />
     );
   }
+
   const galleryCount = trip.galleryUris?.length || 0;
-  
   const heroUri = photoData?.results?.[0]?.urls?.regular ?? trip.imageUri;
   const photographerName = photoData?.results?.[0]?.user?.name;
 
@@ -144,7 +142,10 @@ export default function TripDetailScreen() {
         </View>
 
         <View style={styles.ratingContainer}>
-          <RatingStars rating={trip.rating} />
+          <RatingStars
+            rating={trip.rating}
+            onChange={() => {}}
+          />
         </View>
 
         <Link href={`/trip/gallery/${trip.id}` as any} asChild>
@@ -158,10 +159,20 @@ export default function TripDetailScreen() {
           <Text style={styles.buttonText}>Powrót do listy</Text>
         </Pressable>
 
-        <Pressable style={styles.deleteButton} onPress={confirmDelete}>
-          <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.deleteButtonText}>Usuń podróż</Text>
-        </Pressable>
+        <View style={styles.actionsRow}>
+          <Pressable 
+            onPress={() => router.push(`/trip/edit/${trip.id}` as any)} 
+            style={styles.editBtn}
+          >
+            <Text style={styles.editBtnText}>Edytuj</Text>
+          </Pressable>
+
+          <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+            <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.deleteButtonText}>Usuń</Text>
+          </Pressable>
+        </View>
+        
       </View>
     </ScrollView>
   );
@@ -265,6 +276,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  actionsRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  editBtn: {
+    backgroundColor: Colors.reactBlue,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginRight: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBtnText: {
+    color: Colors.darkBg,
+    fontWeight: '600',
+    fontSize: 16,
+  },
   deleteButton: {
     backgroundColor: '#E94560',
     flexDirection: 'row',
@@ -272,7 +302,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     padding: 12,
-    marginTop: 12,
+    flex: 1,
     gap: 8,
   },
   deleteButtonText: {

@@ -8,4 +8,9 @@ export const Colors = {
   inputBg: '#243352',
   inputBorder: '#2E4066',
   border: '#2E3A50',
+  reactBlue: '#61DAFB',
+  darkBg: '#0F1A2E',
+  gray300: '#D1D5DB',
+  gray500: '#6B7280',
+  white: '#FFFFFF',
 } as const;

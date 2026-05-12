@@ -17,7 +17,7 @@ export default function AddTripScreen() {
 
   return (
     <View style={styles.container}>
-      <AddTripForm onAdd={handleAdd} />
+      <AddTripForm />
     </View>
   );
 }
