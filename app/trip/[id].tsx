@@ -1,8 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import CountryCard from '../../components/CountryCard';
 import ErrorView from '../../components/ErrorView';
 import RatingStars from '../../components/RatingStars';
@@ -106,7 +107,14 @@ export default function TripDetailScreen() {
 
       <View style={styles.heroContainer}>
         {heroUri ? (
-          <Image source={{ uri: heroUri }} style={styles.heroImage} resizeMode="cover" />
+         <Image 
+             source={{ uri: heroUri }} 
+             placeholder={{ blurhash: 'LGF5]+Yk^6#M@-5c,1J5@[or[Q6.' }}
+             contentFit="cover"
+             cachePolicy="memory-disk"
+             transition={300}
+             style={styles.heroImage} 
+         />
         ) : (
           <View style={styles.placeholder}>
             <Ionicons name="image-outline" size={64} color="#4A6FA5" />

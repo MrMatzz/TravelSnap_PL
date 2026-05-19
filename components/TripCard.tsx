@@ -1,57 +1,58 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import React from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { TripFormData } from '../types/tripSchema';
 import RatingStars from './RatingStars';
 
 interface TripCardProps {
-  id: string;
-  title: string;
-  destination: string;
-  date: string;
-  rating: number;
-  imageUri?: string;
-  galleryUris?: string[];
-  onDelete: (id: string) => void;
+  trip: TripFormData & { id: string };
+  onPress: (id: string) => void;
 }
 
-export default function TripCard({ id, title, destination, date, rating, imageUri, galleryUris, onDelete }: TripCardProps) {
+const TripCard = React.memo(function TripCard({ trip, onPress }: TripCardProps) {
   return (
-    <View style={styles.cardContainer}>
-      {imageUri && (
-        <Image source={{ uri: imageUri }} style={styles.cardImage} />
+    <Pressable style={styles.cardContainer} onPress={() => onPress(trip.id)}>
+      {trip.imageUri && (
+        <Image 
+          source={{ uri: trip.imageUri }} 
+          style={styles.cardImage} 
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
+        />
       )}
       
       <View style={styles.contentContainer}>
         <View style={styles.cardHeader}>
-          <Text style={styles.title}>{title}</Text>
-          <Pressable onPress={() => onDelete(id)} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={20} color={Colors.accent} />
-          </Pressable>
+          <Text style={styles.title}>{trip.title}</Text>
         </View>
         
-        <RatingStars rating={rating} />
+        <RatingStars rating={trip.rating} />
         
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{destination}</Text>
+          <Text style={styles.infoText}>{trip.destination}</Text>
         </View>
         
         <View style={styles.infoRow}>
           <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{date}</Text>
+          <Text style={styles.infoText}>{trip.date}</Text>
         </View>
       </View>
 
-      {galleryUris && galleryUris.length > 0 && (
+      {trip.galleryUris && trip.galleryUris.length > 0 && (
         <View style={styles.galleryBadge}>
           <Ionicons name="images" size={14} color={Colors.background} />
-          <Text style={styles.galleryBadgeText}>{galleryUris.length}</Text>
+          <Text style={styles.galleryBadgeText}>{trip.galleryUris.length}</Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
-}
+});
+
+export default TripCard;
 
 const styles = StyleSheet.create({
   cardContainer: {
@@ -85,11 +86,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     flex: 1,
     marginRight: 10,
-  },
-  deleteButton: {
-    backgroundColor: Colors.accent + '26',
-    borderRadius: 12,
-    padding: 6,
   },
   infoRow: {
     flexDirection: 'row',

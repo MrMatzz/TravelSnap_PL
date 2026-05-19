@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { RESTCOUNTRIES_BASE_URL } from '../constants/api';
 import { Colors } from '../constants/Colors';
 import { useFetch } from '../hooks/useFetch';
@@ -29,15 +30,21 @@ export default function CountryCard({ countryName }: CountryCardProps) {
   const currencyText = currency ? `${currency.name} (${currency.symbol})` : '—';
 
   return (
-    <View style={styles.card}>
-      <Image source={{ uri: country.flags.png }} style={styles.flag} />
-      <View style={styles.info}>
-        <Text style={styles.countryName}>{country.name.common}</Text>
-        <Text style={styles.detailText}>Stolica: {capital}</Text>
-        <Text style={styles.detailText}>Waluta: {currencyText}</Text>
-      </View>
+  <View style={styles.card}>
+    <Image 
+      source={{ uri: country.flags.png }} 
+      style={styles.flag} 
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      transition={200}
+    />
+    <View style={styles.info}>
+      <Text style={styles.countryName}>{country.name.common}</Text>
+      <Text style={styles.detailText}>Stolica: {capital}</Text>
+      <Text style={styles.detailText}>Waluta: {currencyText}</Text>
     </View>
-  );
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
