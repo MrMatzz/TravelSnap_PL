@@ -1,4 +1,9 @@
 export interface TripData {
+  coordinates?:
+  {
+    latitude: number;
+    longitude: number;
+  };
   title: string;
   destination: string;
   date: string;

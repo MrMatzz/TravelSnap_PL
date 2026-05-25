@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -73,7 +74,7 @@ export default function AddTripForm() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
     });
 
@@ -83,10 +84,30 @@ export default function AddTripForm() {
   };
 
   const onSubmit = async (data: TripFormData) => {
-    await addTrip(data);
-    reset();
-    router.back();
+  let coordinates;
+
+    try {
+      const geocodeResults = await Location.geocodeAsync(data.destination);
+    
+      if (geocodeResults.length > 0){
+        coordinates = {
+          latitude: geocodeResults[0].latitude,
+          longitude: geocodeResults[0].longitude,
+        };
+      }
+    } catch (error) {
+    
+  }
+
+  const newTrip = {
+    id: Date.now().toString(),
+    ...data,
+    ...(coordinates && { coordinates })
   };
+
+  addTrip(newTrip);
+  router.back();
+};
 
   return (
     <KeyboardAvoidingView 

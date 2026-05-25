@@ -1,6 +1,7 @@
-import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Link, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmptyState from '../../components/EmptyState';
 import TripCard from '../../components/TripCard';
@@ -73,6 +74,11 @@ export default function TripsListScreen() {
           }
         />
       )}
+      <Link href="/trip/add-trip" asChild>
+        <Pressable style={styles.fab}>
+          <Ionicons name="add" size={32} color={Colors.background} />
+        </Pressable>
+      </Link>
     </SafeAreaView>
   );
 }
@@ -89,5 +95,17 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 20,
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
   },
 });

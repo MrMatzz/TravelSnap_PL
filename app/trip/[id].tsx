@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
 import CountryCard from '../../components/CountryCard';
 import ErrorView from '../../components/ErrorView';
 import RatingStars from '../../components/RatingStars';
@@ -21,6 +23,9 @@ export default function TripDetailScreen() {
   
   const trip = trips.find(t => t.id === id);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const [address, setAddress] = useState<string | null>(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   const unsplashUrl = trip ? `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(trip.destination)}&per_page=1` : '';
 
@@ -41,6 +46,34 @@ export default function TripDetailScreen() {
     };
     loadFavoriteStatus();
   }, [id]);
+
+  useEffect(() => {
+    if (!trip?.coordinates) return;
+
+    const fetchAddress = async () => {
+      setIsLoadingAddress(true);
+      try {
+        const result = await Location.reverseGeocodeAsync(trip.coordinates!);
+        
+        if (result.length > 0) {
+          const { street, city, region, country } = result[0];
+          
+          const formattedAddress = [street, city, region, country]
+            .filter(Boolean)
+            .join(', ');
+            
+          if (formattedAddress) {
+            setAddress(formattedAddress);
+          }
+        }
+      } catch (error) {
+      } finally {
+        setIsLoadingAddress(false);
+      }
+    };
+
+    fetchAddress();
+  }, [trip?.coordinates]);
 
   const toggleFavorite = async () => {
     try {
@@ -140,8 +173,18 @@ export default function TripDetailScreen() {
         <Text style={styles.title}>{trip.title}</Text>
         
         <View style={styles.infoRow}>
-          <Ionicons name="location" size={16} color={Colors.textSecondary} />
-          <Text style={styles.infoText}>{trip.destination}</Text>
+          <Ionicons name="location" size={16} color={Colors.textSecondary} style={styles.iconAlign} />
+          <View style={styles.locationTextContainer}>
+            <Text style={styles.infoText}>{trip.destination}</Text>
+            
+            {isLoadingAddress && (
+              <ActivityIndicator size="small" color={Colors.primary} style={styles.addressSpinner} />
+            )}
+            
+            {!isLoadingAddress && address && (
+              <Text style={styles.addressText}>{address}</Text>
+            )}
+          </View>
         </View>
         
         <View style={styles.infoRow}>
@@ -245,12 +288,29 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  iconAlign: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  locationTextContainer: {
+    flex: 1,
+    marginLeft: 8,
   },
   infoText: {
     fontSize: 16,
     color: Colors.textSecondary,
-    marginLeft: 8,
+  },
+  addressSpinner: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  addressText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    opacity: 0.8,
   },
   ratingContainer: {
     marginTop: 8,

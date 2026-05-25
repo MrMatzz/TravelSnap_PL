@@ -21,7 +21,7 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen 
-          name="add-trip" 
+          name="trip/add-trip" 
           options={{ 
             presentation: 'modal',
             title: 'Dodaj podróż',

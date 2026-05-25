@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 export const tripSchema = z.object({
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   title: z.string()
     .min(3, 'Tytuł musi mieć co najmniej 3 znaki')
     .max(60, 'Tytuł może mieć maksymalnie 60 znaków')

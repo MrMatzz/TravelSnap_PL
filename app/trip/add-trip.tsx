@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import AddTripForm from '../components/AddTripForm';
-import { Colors } from '../constants/Colors';
-import { useTrips } from '../context/TripContext';
-import { TripData } from '../types/trip';
+import AddTripForm from '../../components/AddTripForm';
+import { Colors } from '../../constants/Colors';
+import { useTrips } from '../../context/TripContext';
+import { TripData } from '../../types/trip';
 
 export default function AddTripScreen() {
   const router = useRouter();
