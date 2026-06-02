@@ -2,22 +2,31 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Colors } from '../constants/Colors';
 import { TripFormData } from '../types/tripSchema';
 import RatingStars from './RatingStars';
 
 interface TripCardProps {
   trip: TripFormData & { id: string };
-  onPress: (id: string) => void;
+  onPress?: (id: string) => void;
+  onDelete?: (id: string) => void; 
 }
+
+const AnimatedExpoImage = Animated.createAnimatedComponent(Image);
 
 const TripCard = React.memo(function TripCard({ trip, onPress }: TripCardProps) {
   return (
-    <Pressable style={styles.cardContainer} onPress={() => onPress(trip.id)}>
+    <Pressable 
+      style={styles.cardContainer} 
+      onPress={() => onPress && onPress(trip.id)}
+    >
       {trip.imageUri && (
-        <Image 
-          source={{ uri: trip.imageUri }} 
-          style={styles.cardImage} 
+        <AnimatedExpoImage 
+          source={{ uri: trip.imageUri }}
+          // @ts-ignore
+          sharedTransitionTag={`trip-image-${trip.id}`}
+          style={styles.cardImage}
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={200}

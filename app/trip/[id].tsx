@@ -1,10 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollViewOffset
+} from 'react-native-reanimated';
 
 import CountryCard from '../../components/CountryCard';
 import ErrorView from '../../components/ErrorView';
@@ -29,10 +35,15 @@ export default function TripDetailScreen() {
 
   const unsplashUrl = trip ? `${UNSPLASH_BASE_URL}/search/photos?query=${encodeURIComponent(trip.destination)}&per_page=1` : '';
 
-  const { data: photoData, loading: photoLoading, refetch: refetchPhoto } = useFetch<UnsplashResponse>(
+  const { data: photoData, loading: photoLoading } = useFetch<UnsplashResponse>(
     unsplashUrl, 
     { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } }
   );
+
+  const HEADER_HEIGHT = 250;
+
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useScrollViewOffset(scrollRef);
 
   useEffect(() => {
     const loadFavoriteStatus = async () => {
@@ -114,8 +125,26 @@ export default function TripDetailScreen() {
   const heroUri = photoData?.results?.[0]?.urls?.regular ?? trip.imageUri;
   const photographerName = photoData?.results?.[0]?.user?.name;
 
+  const headerStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      scrollY.value,
+      [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
+      [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75],
+      Extrapolation.CLAMP
+    );
+    
+    const scale = interpolate(
+      scrollY.value,
+      [-HEADER_HEIGHT, 0],
+      [2, 1],
+      Extrapolation.CLAMP
+    );
+
+    return { transform: [{ translateY }, { scale }] };
+  });
+
   return (
-    <ScrollView style={styles.container} bounces={false}>
+    <Animated.ScrollView ref={scrollRef} style={styles.container} bounces={true}>
       <Stack.Screen 
         options={{ 
           title: trip.title,
@@ -138,10 +167,12 @@ export default function TripDetailScreen() {
         }} 
       />
 
-      <View style={styles.heroContainer}>
+      <Animated.View style={[styles.heroContainer, headerStyle]}>
         {heroUri ? (
-         <Image 
-             source={{ uri: heroUri }} 
+         <Animated.Image
+             source={{ uri: heroUri }}
+             // @ts-ignore
+             sharedTransitionTag={`trip-image-${trip.id}`}
              placeholder={{ blurhash: 'LGF5]+Yk^6#M@-5c,1J5@[or[Q6.' }}
              contentFit="cover"
              cachePolicy="memory-disk"
@@ -160,7 +191,7 @@ export default function TripDetailScreen() {
             <ActivityIndicator size="large" color={Colors.accent} />
           </View>
         )}
-      </View>
+      </Animated.View>
 
       {photographerName && (
         <Text style={styles.attributionText}>Photo by {photographerName} on Unsplash</Text>
@@ -225,7 +256,7 @@ export default function TripDetailScreen() {
         </View>
         
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

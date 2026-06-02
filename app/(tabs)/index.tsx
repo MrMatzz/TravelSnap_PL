@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AnimatedTripCard } from '../../components/AnimatedTripCard';
 import EmptyState from '../../components/EmptyState';
-import TripCard from '../../components/TripCard';
 import TripStats from '../../components/TripStats';
 import { Colors } from '../../constants/Colors';
 import { useTrips } from '../../context/TripContext';
@@ -41,6 +42,7 @@ export default function TripsListScreen() {
   const handleTripPress = useCallback((id: string) => {
     router.push(`/trip/${id}`);
   }, [router]);
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,21 +51,17 @@ export default function TripsListScreen() {
       {visibleTrips.length === 0 ? (
         <EmptyState />
       ) : (
-        <FlatList
+      <Animated.FlatList
           data={visibleTrips}
           keyExtractor={(item) => item.id}
-          getItemLayout={(_, index) => ({
-            length: CARD_HEIGHT,
-            offset: CARD_HEIGHT * index,
-            index,
-          })}
-          initialNumToRender={10}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          removeClippedSubviews={Platform.OS === 'android'}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <TripCard trip={item} onPress={handleTripPress} />
+          itemLayoutAnimation={LinearTransition.springify()}
+          renderItem={({ item, index }) => (
+            <AnimatedTripCard
+              trip={item}
+              index={index}
+              onPress={() => handleTripPress(item.id)}
+              onDelete={() => {}}
+            />
           )}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
