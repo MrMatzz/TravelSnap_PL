@@ -9,7 +9,7 @@ import Animated, {
   interpolate,
   useAnimatedRef,
   useAnimatedStyle,
-  useScrollViewOffset
+  useScrollOffset
 } from 'react-native-reanimated';
 
 import CountryCard from '../../components/CountryCard';
@@ -43,7 +43,7 @@ export default function TripDetailScreen() {
   const HEADER_HEIGHT = 250;
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const scrollY = useScrollViewOffset(scrollRef);
+  const scrollY = useScrollOffset(scrollRef);
 
   useEffect(() => {
     const loadFavoriteStatus = async () => {
@@ -95,9 +95,15 @@ export default function TripDetailScreen() {
     }
   };
 
-  const handleDelete = async () => {
-    await deleteTrip(id);
+  const handleDelete = () => {
     router.back();
+    setTimeout(async () => {
+      try {
+        await deleteTrip(id);
+      } catch (error) {
+        console.error("Błąd podczas usuwania:", error);
+      }
+    }, 300);
   };
 
   const confirmDelete = () => {

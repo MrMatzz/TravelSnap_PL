@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import DestinationCard from '../../components/DestinationCard';
 import { SkeletonCard } from '../../components/SkeletonCard';
 import { Colors } from '../../constants/Colors';
@@ -40,17 +41,24 @@ export default function ExploreScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        key={`list-${listKey}`}
-        data={POPULAR}
-        keyExtractor={(city) => city}
-        renderItem={({ item }) => <DestinationCard city={item} />}
-        contentContainerStyle={styles.listContent}
-        refreshing={isRefreshing}
-        onRefresh={refetchAll}
-      />
-    </View>
+    <FlatList
+      key={`list-${listKey}`}
+      data={POPULAR}
+      keyExtractor={(city) => city}
+      renderItem={({ item, index }) => {
+        const column = index % 2; 
+        const delay = index * 100 + (column * 50);
+
+        return (
+          <Animated.View entering={FadeInDown.delay(delay).springify()}>
+            <DestinationCard city={item} />
+        </Animated.View>
+      );
+    }}
+    contentContainerStyle={styles.listContent}
+    refreshing={isRefreshing}
+    onRefresh={refetchAll}
+  />
   );
 }
 

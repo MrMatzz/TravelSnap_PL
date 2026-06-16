@@ -21,7 +21,7 @@ const TripCard = React.memo(function TripCard({ trip, onPress }: TripCardProps) 
       style={styles.cardContainer} 
       onPress={() => onPress && onPress(trip.id)}
     >
-      {trip.imageUri && (
+      {trip.imageUri ? (
         <AnimatedExpoImage 
           source={{ uri: trip.imageUri }}
           // @ts-ignore
@@ -31,6 +31,10 @@ const TripCard = React.memo(function TripCard({ trip, onPress }: TripCardProps) 
           cachePolicy="memory-disk"
           transition={200}
         />
+      ) : (
+        <View style={[styles.cardImage, styles.placeholder]}>
+          <Ionicons name="image-outline" size={48} color="#4A6FA5" />
+        </View>
       )}
       
       <View style={styles.contentContainer}>
@@ -122,5 +126,10 @@ const styles = StyleSheet.create({
     color: Colors.background,
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  placeholder: {
+    backgroundColor: '#1A2744',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
