@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { Colors } from '../constants/Colors';
 import { TripProvider } from '../context/TripContext';
 import { QueryProvider } from '../providers/QueryProvider';
@@ -10,6 +11,8 @@ export default function RootLayout() {
     <QueryProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <TripProvider>
+          <OfflineBanner />
+          
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: Colors.background },

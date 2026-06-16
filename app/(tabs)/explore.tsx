@@ -1,32 +1,28 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import DestinationCard from '../../components/DestinationCard';
 import { SkeletonCard } from '../../components/SkeletonCard';
 import { Colors } from '../../constants/Colors';
 
-const POPULAR = [
-  "Tokyo", "Lisbon", "Reykjavik", "Bali", 
-  "Cape Town", "Kyoto", "Marrakech", "Patagonia"
-];
+import CountryCard from '../../components/CountryCard';
+import ErrorView from '../../components/ErrorView';
+import { useCountriesQuery } from '../../hooks/useCountriesQuery';
 
 export default function ExploreScreen() {
-  const [isLoading, setIsLoading] = useState(true);
+  const { 
+    data: countries = [], 
+    isLoading, 
+    isError, 
+    refetch 
+  } = useCountriesQuery();
+
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [listKey, setListKey] = useState(0);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const refetchAll = useCallback(() => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setListKey(prev => prev + 1);
-    setTimeout(() => setIsRefreshing(false), 500);
-  }, []);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   if (isLoading) {
     return (
@@ -40,25 +36,30 @@ export default function ExploreScreen() {
     );
   }
 
-  return (
-    <FlatList
-      key={`list-${listKey}`}
-      data={POPULAR}
-      keyExtractor={(city) => city}
-      renderItem={({ item, index }) => {
-        const column = index % 2; 
-        const delay = index * 100 + (column * 50);
+  if (isError) {
+    return <ErrorView message="Nie udało się załadować krajów" onRetry={refetch} />;
+  }
 
-        return (
-          <Animated.View entering={FadeInDown.delay(delay).springify()}>
-            <DestinationCard city={item} />
-        </Animated.View>
-      );
-    }}
-    contentContainerStyle={styles.listContent}
-    refreshing={isRefreshing}
-    onRefresh={refetchAll}
-  />
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={countries}
+        keyExtractor={(item) => item.cca2} 
+        renderItem={({ item, index }) => {
+          const column = index % 2; 
+          const delay = index * 50 + (column * 25);
+
+          return (
+            <Animated.View entering={FadeInDown.delay(delay).springify()}>
+              <CountryCard {...({ country: item } as any)} />
+            </Animated.View>
+          );
+        }}
+        contentContainerStyle={styles.listContent}
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
+      />
+    </View>
   );
 }
 

@@ -6,16 +6,19 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedTripCard } from '../../components/AnimatedTripCard';
 import EmptyState from '../../components/EmptyState';
+import { SkeletonCard } from '../../components/SkeletonCard';
 import TripStats from '../../components/TripStats';
 import { Colors } from '../../constants/Colors';
-import { useTrips } from '../../context/TripContext';
+import { useDeleteTrip } from '../../hooks/useTripMutations';
+import { useTripsQuery } from '../../hooks/useTripsQuery';
 import { generateDummyTrips } from '../../utils/dummyTrips';
 
 const CARD_HEIGHT = 350;
 const DUMMY_DATA = generateDummyTrips(200);
 
 export default function TripsListScreen() {
-  const { trips } = useTrips();
+  const { data: trips = [], isLoading } = useTripsQuery();
+  const { mutate: deleteTrip } = useDeleteTrip();
   const router = useRouter();
 
   const [visibleCount, setVisibleCount] = useState(20);
@@ -42,8 +45,17 @@ export default function TripsListScreen() {
   const handleTripPress = useCallback((id: string) => {
     router.push(`/trip/${id}`);
   }, [router]);
-  
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {[1, 2, 3].map((i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </SafeAreaView>
+    );
+  }
+  
   return (
     <SafeAreaView style={styles.container}>
       <TripStats trips={trips} />
@@ -51,16 +63,17 @@ export default function TripsListScreen() {
       {visibleTrips.length === 0 ? (
         <EmptyState />
       ) : (
-      <Animated.FlatList
+        <Animated.FlatList
           data={visibleTrips}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent} 
           itemLayoutAnimation={LinearTransition.springify()}
           renderItem={({ item, index }) => (
             <AnimatedTripCard
               trip={item}
               index={index}
               onPress={() => handleTripPress(item.id)}
-              onDelete={() => {}}
+              onDelete={() => deleteTrip(item.id)} 
             />
           )}
           onEndReached={loadMore}
